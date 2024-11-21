@@ -85,7 +85,7 @@ def load_data():
     try:
         if option == "Upload .xlsx":
             uploaded_file = st.file_uploader(
-                "Wybierz plik Excel",
+                "Choose Excel file",
                 type=["xlsx"],
                 key="excel_uploader"
             )
@@ -97,7 +97,7 @@ def load_data():
                 
                 # Wybór arkusza
                 selected_sheet = st.selectbox(
-                    "Wybierz arkusz",
+                    "Choose sheet",
                     sheet_names,
                     key="sheet_selector"
                 )
@@ -117,12 +117,12 @@ def load_data():
                 
                 if df is not None:
                     st.session_state.data = df
-                    st.success(f"Pomyślnie wczytano arkusz: {selected_sheet}")
+                    st.success(f"Succesfuly load Excel sheet: {selected_sheet}")
                     return df
                     
         elif option == "Upload .csv":
             uploaded_file = st.file_uploader(
-                "Wybierz plik CSV",
+                "Choose CSV file",
                 type=["csv"],
                 key="csv_uploader"
             )
@@ -130,13 +130,13 @@ def load_data():
             if uploaded_file is not None:
                 # Opcje dla CSV
                 st.session_state.encoding = st.selectbox(
-                    "Wybierz kodowanie pliku",
+                    "Choose encoding",
                     options=["utf-8", "cp1250", "iso-8859-1"],
                     key="encoding"
                 )
                 
                 st.session_state.separator = st.selectbox(
-                    "Wybierz separator",
+                    "Choose separator",
                     options=[",", ";", "|", "\t"],
                     key="separator"
                 )
@@ -144,14 +144,14 @@ def load_data():
                 df = process_uploaded_file(uploaded_file, "csv")
                 if df is not None:
                     st.session_state.data = df
-                    st.success(f"Pomyślnie wczytano plik: {uploaded_file.name}")
+                    st.success(f"Succesfuly load file: {uploaded_file.name}")
                     return df
                     
         if st.session_state.data is None:
-            st.info("Proszę wybrać plik do wczytania")
+            st.info("Choose file to load")
             
     except Exception as e:
-        st.error(f"Wystąpił błąd: {str(e)}")
+        st.error(f"Load error: {str(e)}")
         return None
 
 def test_searching():
@@ -224,7 +224,7 @@ def reset_collection(COLLECTION_NAME, DIM):
         # Usuń kolekcję, jeśli istnieje
         if collection_name in [col.name for col in client.get_collections().collections]:
             client.delete_collection(collection_name=collection_name)
-            print(f"Kolekcja '{collection_name}' została usunięta.")
+            print(f"Collection '{collection_name}' was droped.")
 
         # Utwórz nową kolekcję
         if not qdrant_client.collection_exists(collection_name=COLLECTION_NAME):
@@ -235,7 +235,7 @@ def reset_collection(COLLECTION_NAME, DIM):
     )
         
     except Exception as e:
-        print("Błąd połączenia:", e)
+        print("Connection error:", e)
 
 def get_normalized_embedding(
     text: Union[str, List[str]], 
@@ -275,10 +275,10 @@ def get_normalized_embedding(
 
 def openAI_load_data():
     # Sprawdź czy dane są załadowane
-    if st.session_state.data is None:
-        st.warning("Load data first at tab 'Load data'")
-        return
-    if st.button("Załaduj nowe dane do bazy wektorowej"):
+    # if st.session_state.data is None:
+    #     st.warning("Load data first at tab 'Load data'")
+    #     return
+    if st.button("Vector db new data load"):
     # usunięcie \n
         st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
     # przeształcenie data na listę
@@ -300,14 +300,16 @@ def openAI_load_data():
         )
         for idx, row in st.session_state.data.iterrows()
         ]
-    )
-    return st.write(f"Data was succesufy loaded to Qdrant '{QDRANT_COLLECTION_NAME_AI}'.")
+        )
+        st.toast("Data was succesufy loaded to Qdrant collection '{QDRANT_COLLECTION_NAME_AI}'", icon="🎉")
+    return 
+    # st.write(f"Data was succesufy loaded to Qdrant '{QDRANT_COLLECTION_NAME_AI}'.")
 
 def sentence_transtormer_load_data():
     # Sprawdź czy dane są załadowane
-    if st.session_state.data is None:
-        st.warning("Load data first at tab 'Load data'")
-        return
+    # if st.session_state.data is None:
+    #     st.warning("Load data first at tab 'Load data'")
+    #     return
     if st.button("Załaduj nowe dane do bazy wektorowej "):
     # usunięcie \n
         st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
@@ -330,8 +332,10 @@ def sentence_transtormer_load_data():
         )
         for idx, row in st.session_state.data.iterrows()
         ]
-    )
-    return st.write(f"Data was succesufy loaded to Qdrant '{QDRANT_COLLECTION_NAME_SENTENCE}'.")
+        )
+        st.toast("Data was succesufy loaded to Qdrant collection '{QDRANT_COLLECTION_NAME_AI}'", icon="🎉")
+    return 
+#st.write(f"Data was succesufy loaded to Qdrant '{QDRANT_COLLECTION_NAME_SENTENCE}'.")
 
 def get_openai_client():
     return OpenAI(api_key=env["OPENAI_API_KEY"])
@@ -435,47 +439,63 @@ def get_collection_info(collection_name):
         
         return {
             "Name": collection_name,
-            "Vectors Count": collection_info.vectors_count,
-            "Indexed Vectors Count": collection_info.indexed_vectors_count,
+            #"Vectors Count": collection_info.vectors_count,
+            #"Indexed Vectors Count": collection_info.indexed_vectors_count,
             "Points Count": collection_info.points_count,
-            "Deletion Enabled": collection_info.config.params.vectors.on_disk,
+            #"Deletion Enabled": collection_info.config.params.vectors.on_disk,
             "Vector Size": collection_info.config.params.vectors.size,
         }
     except Exception as e:
-        st.error(f"Błąd podczas pobierania informacji o kolekcji: {e}")
+        st.error(f"Error during get Qudrant collection info: {e}")
         return None
 
 def main():
-    st.title("Analiza danych - Wczytywanie i Wyszukiwanie")
+    st.title("Text & Context searching tests")
     
     # Zakładki
     tab1, tab2, tab3, tab4 = st.tabs(["Load data", "Text searching", "OpenAI ada 002", "Sentence transformers"])
     
     with tab1:
-        st.header("Wczytywanie danych")
+        st.write("Proper file format: id_product, category root, category, name, description.")
         
+        # Path to the Excel file
+        file_path = "example_file.xlsx"
+
+        # Read the file in binary mode
+        with open(file_path, "rb") as file:
+            file_data = file.read()
+
+        # Display the download button
+        st.download_button(
+            label="Download example Excel File",
+            data=file_data,
+            file_name="emample_file.xls",
+            mime="application/vnd.ms-excel"
+            )
+            
+
         # Przycisk do resetowania
-        if st.button("Resetuj dane"):
+        if st.button("Reset data"):
             st.session_state.data = None
             st.session_state.file_buffer = None
-            st.experimental_rerun()
+            #st.experimental_rerun()
         
         # Wczytaj dane
         df = load_data()
         
         # Wyświetl dane jeśli są dostępne
         if df is not None:
-            st.write("Podgląd wczytanych danych:")
+            st.write("Look for upload data:")
             st.dataframe(df.head())
             
             # Informacje o danych
-            st.write("Informacje o danych:")
-            st.write(f"Liczba wierszy: {df.shape[0]}")
-            st.write(f"Liczba kolumn: {df.shape[1]}")
-            st.write("Nazwy kolumn:", df.columns.tolist())
+            st.write("Info:")
+            st.write(f"Rows: {df.shape[0]}")
+            st.write(f"Columns: {df.shape[1]}")
+            st.write("Columns name:", df.columns.tolist())
 
             # Opcjonalnie: statystyki kolumn
-            if st.checkbox("Pokaż statystyki kolumn"):
+            if st.checkbox("Statistic of columns"):
                 st.write(df.describe())
     
     with tab2:
@@ -483,59 +503,74 @@ def main():
         test_searching()
 
     with tab3:
-        st.header("OpenAI ada 002 model")
-        openAI_load_data()
-        user_input = st.text_input("Search", st.session_state.user_input, key=f"input_2")
-        if st.button("Zatwierdź", key=f"input_3"):
-            vector_results, text_results = open_AI_search(
-            query_text=user_input,
-            collection_name=QDRANT_COLLECTION_NAME_AI
+        st.write("OpenAI ada 002 model - paid commercial model")
+        tab31, tab32, tab33 = st.tabs(["Searching", "Current Qdrant data", "Load data to Qdrant"])
+        with tab31:
+            user_input = st.text_input("Search", st.session_state.user_input, key=f"input_2")
+            if st.button("Confirm", key=f"input_3"):
+                vector_results, text_results = open_AI_search(
+                query_text=user_input,
+                collection_name=QDRANT_COLLECTION_NAME_AI
 )
 
-            st.write("Wyniki wyszukiwania wektorowego:")
-            for result in vector_results:
-                st.write('Name:', result.payload["name"], 
-                'ID:', result.payload["id_product"], 
-                'Score:', round(result.score, 3))
+                st.write("Vector search result:")
+                for result in vector_results:
+                    st.write('Name:', result.payload["name"], 
+                    'ID:', result.payload["id_product"], 
+                    'Score:', round(result.score, 3))
 
-            st.write("\nWyniki wyszukiwania tekstowego:")
-            for result in text_results:
-                st.write('Name:', result.payload["name"], 
-                'ID:', result.payload["id_product"])
+                st.write("\nText search result:")
+                for result in text_results:
+                    st.write('Name:', result.payload["name"], 
+                    'ID:', result.payload["id_product"])
+        with tab32:
+            st.write("Current Qdrant data")
+            if st.button("Info about current Qdrant collecion "):
+                info = get_collection_info(QDRANT_COLLECTION_NAME_AI)
+                if info:
+                    st.subheader("Szczegóły kolekcji")
+                    for key, value in info.items():
+                        st.write(f"{key}: {value}")
+
+        with tab33:
+            st.write("Load data to Qdrant")
+            openAI_load_data()
     with tab4:
-        st.header("multi-qa-mpnet-base-dot-v1")
-        # Pobranie pierwszych 5 wierszy z kolekcji
-        get_collection_info(QDRANT_COLLECTION_NAME_SENTENCE)
-        st.title("Informacje o kolekcji Qdrant")
-    
-        # Pole do wprowadzenia nazwy kolekcji
-       
-        if st.button("Pokaż informacje"):
-            info = get_collection_info(QDRANT_COLLECTION_NAME_SENTENCE)
+        st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
+        tab41, tab42, tab43 = st.tabs(["Searching", "Current Qdrant data", "Load data to Qdrant"])
+        with tab41:
+            user_input = st.text_input("Search", st.session_state.user_input, key=f"input_10")
+            if st.button("Zatwierdź ", key=f"input_11"):
+                vector_results, text_results = sentence_search(
+                query_text=user_input,
+                collection_name=QDRANT_COLLECTION_NAME_SENTENCE)
+                st.write("Wyniki wyszukiwania wektorowego:")
+                for result in vector_results:
+                    st.write('Name:', result.payload["name"], 
+                    'ID:', result.payload["id_product"], 
+                    'Score:', round(result.score, 3))
+
+                st.write("\nWyniki wyszukiwania tekstowego:")
+                for result in text_results:
+                    st.write('Name:', result.payload["name"], 
+                    'ID:', result.payload["id_product"])
+
+        with tab42:
+            st.write("Current Qdrant data")
+            if st.button("Info about current Qdrant collecion"):
+                info=get_collection_info(QDRANT_COLLECTION_NAME_SENTENCE)
+                if info:
+                    st.subheader("Szczegóły kolekcji")
+                    for key, value in info.items():
+                        st.write(f"{key}: {value}")
+        with tab43:
+            st.write("Load data to Qdrant")
+            sentence_transtormer_load_data()  
             
-            if info:
-                st.subheader("Szczegóły kolekcji")
-                for key, value in info.items():
-                    st.write(f"{key}: {value}")
+            
         
-        sentence_transtormer_load_data()
-        user_input = st.text_input("Search", st.session_state.user_input, key=f"input_10")
-        if st.button("Zatwierdź ", key=f"input_11"):
-            vector_results, text_results = sentence_search(
-            query_text=user_input,
-            collection_name=QDRANT_COLLECTION_NAME_SENTENCE
-)
+        
 
-            st.write("Wyniki wyszukiwania wektorowego:")
-            for result in vector_results:
-                st.write('Name:', result.payload["name"], 
-                'ID:', result.payload["id_product"], 
-                'Score:', round(result.score, 3))
-
-            st.write("\nWyniki wyszukiwania tekstowego:")
-            for result in text_results:
-                st.write('Name:', result.payload["name"], 
-                'ID:', result.payload["id_product"])
 
 
 if __name__ == "__main__":
