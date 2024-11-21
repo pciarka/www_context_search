@@ -1,0 +1,6 @@
+.env
+test*
+*.png
+__*
+*.ipynb
+

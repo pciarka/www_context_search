@@ -1,0 +1,542 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+from io import BytesIO
+import os
+from qdrant_client import QdrantClient
+from qdrant_client.models import PointStruct, VectorParams, Distance, MatchText
+from qdrant_client.http.models import Filter, FieldCondition, MatchValue, SearchRequest
+from dotenv import dotenv_values
+from typing import Union, List
+from sentence_transformers import SentenceTransformer
+from dotenv import load_dotenv
+from langfuse.openai import OpenAI
+
+# Initialisation
+qdrant_client = QdrantClient(url=os.getenv('QDRANT_URL'), api_key=os.getenv('QDRANT_API_KEY'))
+QDRANT_COLLECTION_NAME_AI = "wszystko_dla_zwierzat_openAI"
+QDRANT_COLLECTION_NAME_SENTENCE = "wszystko_dla_zwierzat_sentence_transformer"
+EMBEDDING_DIM = 1536
+EMBEDDING_MODEL = "text-embedding-ada-002" #OpenAI used model
+
+load_dotenv()
+env = dotenv_values(".env")
+
+
+# Session state inistialisation
+if 'data' not in st.session_state:
+    st.session_state.data = None
+if 'file_buffer' not in st.session_state:
+    st.session_state.file_buffer = None
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ''
+    user_input = st.session_state.user_input
+if "user_input_sentence" not in st.session_state:
+    st.session_state.user_input_sentence = ''
+    user_input_sentence = st.session_state.user_input_sentence
+
+def process_uploaded_file(uploaded_file, file_type):
+    """
+    Przetwarza wczytany plik do BytesIO i DataFrame z pełnym zakresem danych
+    """
+    try:
+        # Zapisz plik do BytesIO
+        bytes_data = BytesIO(uploaded_file.read())
+        st.session_state.file_buffer = bytes_data
+        
+        # Wczytaj dane do DataFrame
+        if file_type == "xlsx":
+            # Użyj parametrów do wczytania pełnego arkusza
+            df = pd.read_excel(
+                bytes_data, 
+                engine='openpyxl',  # Nowszy silnik dla .xlsx
+                header=0,  # Pierwszy wiersz jako nagłówek
+                index_col=None,  # Nie używaj pierwszej kolumny jako indeksu
+                usecols=None,  # Wczytaj wszystkie kolumny
+                dtype=object  # Zachowaj oryginalne typy danych
+            )
+        else:  # csv
+            encoding = st.session_state.get('encoding', 'utf-8')
+            separator = st.session_state.get('separator', ',')
+            df = pd.read_csv(
+                bytes_data, 
+                encoding=encoding, 
+                sep=separator,
+                header=0,
+                index_col=False,
+                dtype=object  # Zachowaj oryginalne typy danych
+            )
+        
+        return df
+    except Exception as e:
+        st.error(f"Błąd podczas przetwarzania pliku: {str(e)}")
+        return None
+
+def load_data():
+    """
+    Funkcja do wczytywania plików
+    """
+    option = st.selectbox(
+        "Choose file format",
+        ("Upload .xlsx", "Upload .csv"),
+        key="file_format"
+    )
+    
+    try:
+        if option == "Upload .xlsx":
+            uploaded_file = st.file_uploader(
+                "Wybierz plik Excel",
+                type=["xlsx"],
+                key="excel_uploader"
+            )
+            
+            if uploaded_file is not None:
+                # Wyświetl dostępne arkusze dla pliku Excel
+                xls = pd.ExcelFile(uploaded_file)
+                sheet_names = xls.sheet_names
+                
+                # Wybór arkusza
+                selected_sheet = st.selectbox(
+                    "Wybierz arkusz",
+                    sheet_names,
+                    key="sheet_selector"
+                )
+                
+                # Resetuj pozycję pliku
+                uploaded_file.seek(0)
+                
+                # Wczytaj wybrany arkusz
+                df = pd.read_excel(
+                    uploaded_file, 
+                    sheet_name=selected_sheet,
+                    engine='openpyxl',
+                    header=0,
+                    index_col=None,
+                    dtype=object  # Zachowaj oryginalne typy danych
+                )
+                
+                if df is not None:
+                    st.session_state.data = df
+                    st.success(f"Pomyślnie wczytano arkusz: {selected_sheet}")
+                    return df
+                    
+        elif option == "Upload .csv":
+            uploaded_file = st.file_uploader(
+                "Wybierz plik CSV",
+                type=["csv"],
+                key="csv_uploader"
+            )
+            
+            if uploaded_file is not None:
+                # Opcje dla CSV
+                st.session_state.encoding = st.selectbox(
+                    "Wybierz kodowanie pliku",
+                    options=["utf-8", "cp1250", "iso-8859-1"],
+                    key="encoding"
+                )
+                
+                st.session_state.separator = st.selectbox(
+                    "Wybierz separator",
+                    options=[",", ";", "|", "\t"],
+                    key="separator"
+                )
+                
+                df = process_uploaded_file(uploaded_file, "csv")
+                if df is not None:
+                    st.session_state.data = df
+                    st.success(f"Pomyślnie wczytano plik: {uploaded_file.name}")
+                    return df
+                    
+        if st.session_state.data is None:
+            st.info("Proszę wybrać plik do wczytania")
+            
+    except Exception as e:
+        st.error(f"Wystąpił błąd: {str(e)}")
+        return None
+
+def test_searching():
+    """
+    Zakładka do testowania wyszukiwania w danych
+    """
+    # Sprawdź czy dane są załadowane
+    if st.session_state.data is None:
+        st.warning("Load data first at tab 'Load data'")
+        return
+    
+    # Pobierz aktualnie załadowane dane
+    df = st.session_state.data
+    
+    st.subheader("Narzędzia wyszukiwania")
+    
+    # Wybór kolumn do przeszukiwania
+    columns = df.columns.tolist()
+    selected_columns = st.multiselect(
+        "Wybierz kolumny do przeszukiwania",
+        columns,
+        default=columns[:min(3, len(columns))]
+    )
+    
+    # Tryby wyszukiwania
+    search_mode = st.radio(
+        "Tryb wyszukiwania",
+        ["Dokładne dopasowanie", "Częściowe dopasowanie", "Regex"]
+    )
+    
+    # Pole wyszukiwania
+    search_query = st.text_input("Wprowadź frazę do wyszukania")
+    
+    # Przycisk wyszukiwania
+    if st.button("Szukaj"):
+        if not search_query:
+            st.warning("Wprowadź frazę do wyszukania")
+            return
+        
+        # Filtrowanie danych
+        if search_mode == "Dokładne dopasowanie":
+            mask = df[selected_columns].isin([search_query]).any(axis=1)
+        elif search_mode == "Częściowe dopasowanie":
+            mask = df[selected_columns].apply(lambda col: col.astype(str).str.contains(search_query, case=False, na=False))
+            mask = mask.any(axis=1)
+        else:  # Regex
+            mask = df[selected_columns].apply(lambda col: col.astype(str).str.contains(search_query, regex=True, case=False, na=False))
+            mask = mask.any(axis=1)
+        
+        # Wyświetl wyniki
+        results = df[mask]
+        
+        st.write(f"Znaleziono {len(results)} wyników:")
+        st.dataframe(results)
+        
+        # Wykresy rozkładu wyników
+        if st.checkbox("Pokaż rozkład wyników"):
+            for col in selected_columns:
+                st.subheader(f"Rozkład {col}")
+                st.bar_chart(results[col].value_counts())
+
+def reset_collection(COLLECTION_NAME, DIM):
+    try:
+        api_key = os.getenv('QDRANT_API_KEY')
+        url = os.getenv('QDRANT_URL')
+        client = QdrantClient(api_key=api_key, url=url)
+
+        collection_name = COLLECTION_NAME
+        
+        # Usuń kolekcję, jeśli istnieje
+        if collection_name in [col.name for col in client.get_collections().collections]:
+            client.delete_collection(collection_name=collection_name)
+            print(f"Kolekcja '{collection_name}' została usunięta.")
+
+        # Utwórz nową kolekcję
+        if not qdrant_client.collection_exists(collection_name=COLLECTION_NAME):
+            print("Tworzę kolekcję")
+            qdrant_client.create_collection(
+                collection_name=COLLECTION_NAME,
+                vectors_config=VectorParams(size=DIM, distance=Distance.COSINE),
+    )
+        
+    except Exception as e:
+        print("Błąd połączenia:", e)
+
+def get_normalized_embedding(
+    text: Union[str, List[str]], 
+    model_name: str = 'sentence-transformers/multi-qa-mpnet-base-dot-v1'
+) -> np.ndarray:
+    """
+    Generuje znormalizowany wektor embedingu dla podanego tekstu używając określonego modelu.
+    
+    Args:
+        text: Tekst lub lista tekstów do przetworzenia
+        model_name: Nazwa modelu sentence-transformers do użycia
+        
+    Returns:
+        Znormalizowany wektor embedingu lub macierz wektorów dla listy tekstów
+    """
+    # Załaduj model
+    model = SentenceTransformer(model_name)
+    
+    # Wygeneruj embedding
+    embedding = model.encode(text)
+    
+    # Konwertuj na numpy array jeśli nie jest
+    if not isinstance(embedding, np.ndarray):
+        embedding = np.array(embedding)
+    
+    # Normalizacja L2 (długość wektora = 1)
+    if embedding.ndim == 1:
+        # Dla pojedynczego wektora
+        norm = np.linalg.norm(embedding)
+        normalized_embedding = embedding / norm if norm > 0 else embedding
+    else:
+        # Dla macierzy wektorów
+        norm = np.linalg.norm(embedding, axis=1, keepdims=True)
+        normalized_embedding = np.divide(embedding, norm, where=norm > 0)
+    
+    return normalized_embedding
+
+def openAI_load_data():
+    # Sprawdź czy dane są załadowane
+    if st.session_state.data is None:
+        st.warning("Load data first at tab 'Load data'")
+        return
+    if st.button("Załaduj nowe dane do bazy wektorowej"):
+    # usunięcie \n
+        st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
+    # przeształcenie data na listę
+    #    st.session_state.data=st.session_state.data.to_dict(orient='records')
+    #st.write(st.session_state.data) #temporaty list print ok?
+    # collection reset        
+        reset_collection(QDRANT_COLLECTION_NAME_AI, 1536)
+    # load data to collection
+        qdrant_client.upsert(
+        collection_name=QDRANT_COLLECTION_NAME_AI,
+        points=[
+        PointStruct(
+            id=idx,
+            vector=get_embedding_ai(f'{row["category root"]} {row["category"]} {row["name"]} {row["description"]}'),  # Generowanie wektora tylko dla nazwy
+            payload={
+                "id_product": row["id_product"], 
+                "name": row["name"]
+            }  # Payload jako słownik
+        )
+        for idx, row in st.session_state.data.iterrows()
+        ]
+    )
+    return st.write(f"Data was succesufy loaded to Qdrant '{QDRANT_COLLECTION_NAME_AI}'.")
+
+def sentence_transtormer_load_data():
+    # Sprawdź czy dane są załadowane
+    if st.session_state.data is None:
+        st.warning("Load data first at tab 'Load data'")
+        return
+    if st.button("Załaduj nowe dane do bazy wektorowej "):
+    # usunięcie \n
+        st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
+    # przeształcenie data na listę
+    #    st.session_state.data=st.session_state.data.to_dict(orient='records')
+    #st.write(st.session_state.data) #temporaty list print ok?
+    # collection reset        
+        reset_collection(QDRANT_COLLECTION_NAME_SENTENCE, 768)
+    # load data to collection
+        qdrant_client.upsert(
+        collection_name=QDRANT_COLLECTION_NAME_SENTENCE,
+        points=[
+        PointStruct(
+            id=idx,
+            vector=get_normalized_embedding(f'{row["category root"]} {row["category"]} {row["name"]} {row["description"]}'),  
+            payload={
+                "id_product": row["id_product"], 
+                "name": row["name"]
+            }  # Payload jako słownik
+        )
+        for idx, row in st.session_state.data.iterrows()
+        ]
+    )
+    return st.write(f"Data was succesufy loaded to Qdrant '{QDRANT_COLLECTION_NAME_SENTENCE}'.")
+
+def get_openai_client():
+    return OpenAI(api_key=env["OPENAI_API_KEY"])
+
+def get_embedding_ai(text):
+    openai_client = get_openai_client()
+    result = openai_client.embeddings.create(
+        input=[text],
+        model=EMBEDDING_MODEL,
+        #dimensions=EMBEDDING_DIM,
+    )
+
+    return result.data[0].embedding  
+
+def open_AI_search(query_text: str, collection_name: str, limit: int = 10, score_threshold: float = 0.2):
+    """
+    Performs both vector similarity search and text search in Qdrant collection.
+    
+    Args:
+        query_text (str): Text to search for
+        collection_name (str): Name of the Qdrant collection
+        limit (int): Maximum number of results to return
+        score_threshold (float): Minimum similarity score threshold
+        
+    Returns:
+        tuple: Two lists of results - vector search results and text search results
+    """
+   
+    # Vector similarity search
+    vector_results = qdrant_client.search(
+        collection_name=collection_name,
+        query_vector=get_embedding_ai(query_text),
+        limit=limit,
+        score_threshold=score_threshold
+    )
+    
+    # Text search using payload field
+    text_search_results = qdrant_client.scroll(
+        collection_name=collection_name,
+        scroll_filter=Filter(
+            must=[
+                FieldCondition(
+                    key="name",
+                    match=MatchText(
+                        text=query_text
+                    )
+                )
+            ]
+        ),
+        limit=limit
+    )[0]  # [0] because scroll returns tuple (results, next_page_offset)
+    
+    return vector_results, text_search_results
+
+def sentence_search(query_text: str, collection_name: str, limit: int = 10, score_threshold: float = 0.2):
+    """
+    Performs both vector similarity search and text search in Qdrant collection.
+    
+    Args:
+        query_text (str): Text to search for
+        collection_name (str): Name of the Qdrant collection
+        limit (int): Maximum number of results to return
+        score_threshold (float): Minimum similarity score threshold
+        
+    Returns:
+        tuple: Two lists of results - vector search results and text search results
+    """
+   
+    # Vector similarity search
+    vector_results = qdrant_client.search(
+        collection_name=collection_name,
+        query_vector=get_normalized_embedding(query_text),
+        limit=limit,
+        score_threshold=score_threshold
+    )
+    
+    # Text search using payload field
+    text_search_results = qdrant_client.scroll(
+        collection_name=collection_name,
+        scroll_filter=Filter(
+            must=[
+                FieldCondition(
+                    key="name",
+                    match=MatchText(
+                        text=query_text
+                    )
+                )
+            ]
+        ),
+        limit=limit
+    )[0]  # [0] because scroll returns tuple (results, next_page_offset)
+    
+    return vector_results, text_search_results
+
+def get_collection_info(collection_name):
+
+    
+    try:
+        # Pobieranie informacji o kolekcji
+        collection_info = qdrant_client.get_collection(collection_name)
+        
+        return {
+            "Name": collection_name,
+            "Vectors Count": collection_info.vectors_count,
+            "Indexed Vectors Count": collection_info.indexed_vectors_count,
+            "Points Count": collection_info.points_count,
+            "Deletion Enabled": collection_info.config.params.vectors.on_disk,
+            "Vector Size": collection_info.config.params.vectors.size,
+        }
+    except Exception as e:
+        st.error(f"Błąd podczas pobierania informacji o kolekcji: {e}")
+        return None
+
+def main():
+    st.title("Analiza danych - Wczytywanie i Wyszukiwanie")
+    
+    # Zakładki
+    tab1, tab2, tab3, tab4 = st.tabs(["Load data", "Text searching", "OpenAI ada 002", "Sentence transformers"])
+    
+    with tab1:
+        st.header("Wczytywanie danych")
+        
+        # Przycisk do resetowania
+        if st.button("Resetuj dane"):
+            st.session_state.data = None
+            st.session_state.file_buffer = None
+            st.experimental_rerun()
+        
+        # Wczytaj dane
+        df = load_data()
+        
+        # Wyświetl dane jeśli są dostępne
+        if df is not None:
+            st.write("Podgląd wczytanych danych:")
+            st.dataframe(df.head())
+            
+            # Informacje o danych
+            st.write("Informacje o danych:")
+            st.write(f"Liczba wierszy: {df.shape[0]}")
+            st.write(f"Liczba kolumn: {df.shape[1]}")
+            st.write("Nazwy kolumn:", df.columns.tolist())
+
+            # Opcjonalnie: statystyki kolumn
+            if st.checkbox("Pokaż statystyki kolumn"):
+                st.write(df.describe())
+    
+    with tab2:
+        st.header("Text searching")
+        test_searching()
+
+    with tab3:
+        st.header("OpenAI ada 002 model")
+        openAI_load_data()
+        user_input = st.text_input("Search", st.session_state.user_input, key=f"input_2")
+        if st.button("Zatwierdź", key=f"input_3"):
+            vector_results, text_results = open_AI_search(
+            query_text=user_input,
+            collection_name=QDRANT_COLLECTION_NAME_AI
+)
+
+            st.write("Wyniki wyszukiwania wektorowego:")
+            for result in vector_results:
+                st.write('Name:', result.payload["name"], 
+                'ID:', result.payload["id_product"], 
+                'Score:', round(result.score, 3))
+
+            st.write("\nWyniki wyszukiwania tekstowego:")
+            for result in text_results:
+                st.write('Name:', result.payload["name"], 
+                'ID:', result.payload["id_product"])
+    with tab4:
+        st.header("multi-qa-mpnet-base-dot-v1")
+        # Pobranie pierwszych 5 wierszy z kolekcji
+        get_collection_info(QDRANT_COLLECTION_NAME_SENTENCE)
+        st.title("Informacje o kolekcji Qdrant")
+    
+        # Pole do wprowadzenia nazwy kolekcji
+       
+        if st.button("Pokaż informacje"):
+            info = get_collection_info(QDRANT_COLLECTION_NAME_SENTENCE)
+            
+            if info:
+                st.subheader("Szczegóły kolekcji")
+                for key, value in info.items():
+                    st.write(f"{key}: {value}")
+        
+        sentence_transtormer_load_data()
+        user_input = st.text_input("Search", st.session_state.user_input, key=f"input_10")
+        if st.button("Zatwierdź ", key=f"input_11"):
+            vector_results, text_results = sentence_search(
+            query_text=user_input,
+            collection_name=QDRANT_COLLECTION_NAME_SENTENCE
+)
+
+            st.write("Wyniki wyszukiwania wektorowego:")
+            for result in vector_results:
+                st.write('Name:', result.payload["name"], 
+                'ID:', result.payload["id_product"], 
+                'Score:', round(result.score, 3))
+
+            st.write("\nWyniki wyszukiwania tekstowego:")
+            for result in text_results:
+                st.write('Name:', result.payload["name"], 
+                'ID:', result.payload["id_product"])
+
+
+if __name__ == "__main__":
+    main()
