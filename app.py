@@ -352,7 +352,10 @@ def sentence_transtormer_load_data():
 #st.write(f"Data was succesufy loaded to Qdrant '{QDRANT_COLLECTION_NAME_SENTENCE}'.")
 
 def get_openai_client():
-    return OpenAI(api_key=env["OPENAI_API_KEY"])
+    #local deploy
+    #return OpenAI(api_key=env["OPENAI_API_KEY"])
+    #streamlit deploy
+    return OpenAI(api_key=key)
 
 def get_embedding_ai(text):
     openai_client = get_openai_client()
