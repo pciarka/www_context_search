@@ -8,11 +8,15 @@ from qdrant_client.models import PointStruct, VectorParams, Distance, MatchText
 from qdrant_client.http.models import Filter, FieldCondition, MatchValue, SearchRequest
 from typing import Union, List
 from sentence_transformers import SentenceTransformer
+
 # only local deploy
 #from dotenv import load_dotenv
 #from dotenv import dotenv_values
-from langfuse.openai import OpenAI
-# local deploy
+#from langfuse.openai import OpenAI
+
+#only 4 streamlit deploy
+from openai import OpenAI
+# only 4 local deploy
 
 # load_dotenv()
 # env = dotenv_values(".env")
