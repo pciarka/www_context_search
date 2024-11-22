@@ -24,7 +24,7 @@ api_key_st=st.session_state.get("QDRANT_API_KEY")
 
 # Initialisation
 #streamlit deploy
-qdrant_client = QdrantClient(url=url_st, api_key=api_key_st))
+qdrant_client = QdrantClient(url=url_st, api_key=api_key_st)
 # local deploy
 #qdrant_client = QdrantClient(url=os.getenv('QDRANT_URL'), api_key=os.getenv('QDRANT_API_KEY'))
 QDRANT_COLLECTION_NAME_AI = "shop_data_openAI"
