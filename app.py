@@ -294,7 +294,7 @@ def openAI_load_data():
     #     return
     if st.button("Vector db new data load"):
     # usunięcie \n
-        st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
+    #    st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
     # przeształcenie data na listę
     #    st.session_state.data=st.session_state.data.to_dict(orient='records')
     #st.write(st.session_state.data) #temporaty list print ok?
@@ -326,7 +326,7 @@ def sentence_transtormer_load_data():
     #     return
     if st.button("Vector db new data load "):
     # usunięcie \n
-        st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
+    #    st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
     # przeształcenie data na listę
     #    st.session_state.data=st.session_state.data.to_dict(orient='records')
     #st.write(st.session_state.data) #temporaty list print ok?
