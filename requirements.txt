@@ -3,4 +3,4 @@ pandas==2.1.4
 numpy==1.26.4
 qdrant-client==1.12.1
 sentence-transformers==3.3.0
-langfuse=2.53.2
+langfuse==2.53.2
