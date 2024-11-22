@@ -12,15 +12,25 @@ from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
 from langfuse.openai import OpenAI
 
+# local deploy
+
+# load_dotenv()
+# env = dotenv_values(".env")
+
+#streamlit deploy
+key=st.session_state.get("openai_api_key")
+url_st=st.session_state.get("QDRANT_URL")
+api_key_st=st.session_state.get("QDRANT_API_KEY")
+
 # Initialisation
-qdrant_client = QdrantClient(url=os.getenv('QDRANT_URL'), api_key=os.getenv('QDRANT_API_KEY'))
+#streamlit deploy
+qdrant_client = QdrantClient(url=url_st, api_key=api_key_st))
+# local deploy
+#qdrant_client = QdrantClient(url=os.getenv('QDRANT_URL'), api_key=os.getenv('QDRANT_API_KEY'))
 QDRANT_COLLECTION_NAME_AI = "shop_data_openAI"
 QDRANT_COLLECTION_NAME_SENTENCE = "shop_data_sentence_transformer"
 EMBEDDING_DIM = 1536
 EMBEDDING_MODEL = "text-embedding-ada-002" #OpenAI used model
-
-load_dotenv()
-env = dotenv_values(".env")
 
 
 # Session state inistialisation
