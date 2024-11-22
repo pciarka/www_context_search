@@ -14,8 +14,8 @@ from langfuse.openai import OpenAI
 
 # Initialisation
 qdrant_client = QdrantClient(url=os.getenv('QDRANT_URL'), api_key=os.getenv('QDRANT_API_KEY'))
-QDRANT_COLLECTION_NAME_AI = "wszystko_dla_zwierzat_openAI"
-QDRANT_COLLECTION_NAME_SENTENCE = "wszystko_dla_zwierzat_sentence_transformer"
+QDRANT_COLLECTION_NAME_AI = "shop_data_openAI"
+QDRANT_COLLECTION_NAME_SENTENCE = "shop_data_sentence_transformer"
 EMBEDDING_DIM = 1536
 EMBEDDING_MODEL = "text-embedding-ada-002" #OpenAI used model
 
@@ -310,7 +310,7 @@ def sentence_transtormer_load_data():
     # if st.session_state.data is None:
     #     st.warning("Load data first at tab 'Load data'")
     #     return
-    if st.button("Załaduj nowe dane do bazy wektorowej "):
+    if st.button("Vector db new data load "):
     # usunięcie \n
         st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
     # przeształcenie data na listę
@@ -525,10 +525,10 @@ def main():
                     'ID:', result.payload["id_product"])
         with tab32:
             st.write("Current Qdrant data")
-            if st.button("Info about current Qdrant collecion "):
-                info = get_collection_info(QDRANT_COLLECTION_NAME_AI)
-                if info:
-                    st.subheader("Szczegóły kolekcji")
+            # if st.button("Info about current Qdrant collecion "):
+            info = get_collection_info(QDRANT_COLLECTION_NAME_AI)
+            if info:
+                    # st.subheader("Szczegóły kolekcji")
                     for key, value in info.items():
                         st.write(f"{key}: {value}")
 
