@@ -1,11 +1,6 @@
-streamlit
+streamlit==1.39.0
 pandas==2.1.4
-numpy
-io
-os
-qdrant_client
-qdrant_client.models
-qdrant_client.http.models
-typing
-sentence_transformers
-langfuse.openai
+numpy==1.26.4
+qdrant-client==1.12.1
+sentence-transformers==3.3.0
+langfuse=2.53.2
