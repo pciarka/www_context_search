@@ -6,12 +6,12 @@ import os
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance, MatchText
 from qdrant_client.http.models import Filter, FieldCondition, MatchValue, SearchRequest
-from dotenv import dotenv_values
 from typing import Union, List
 from sentence_transformers import SentenceTransformer
-from dotenv import load_dotenv
+# only local deploy
+#from dotenv import load_dotenv
+#from dotenv import dotenv_values
 from langfuse.openai import OpenAI
-
 # local deploy
 
 # load_dotenv()
