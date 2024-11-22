@@ -8,10 +8,10 @@ from qdrant_client.models import PointStruct, VectorParams, Distance, MatchText
 from qdrant_client.http.models import Filter, FieldCondition, MatchValue, SearchRequest
 from typing import Union, List
 from sentence_transformers import SentenceTransformer
+from dotenv import dotenv_values
 
 # only local deploy
 #from dotenv import load_dotenv
-#from dotenv import dotenv_values
 #from langfuse.openai import OpenAI
 
 #only 4 streamlit deploy
@@ -22,9 +22,14 @@ from openai import OpenAI
 # env = dotenv_values(".env")
 
 #streamlit deploy
+env = dotenv_values(".env")
 key=st.session_state.get("openai_api_key")
-url_st=st.session_state.get("QDRANT_URL")
-api_key_st=st.session_state.get("QDRANT_API_KEY")
+### Secrets using Streamlit Cloud Mechanism
+# https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management
+if 'QDRANT_URL' in st.secrets:
+    env['QDRANT_URL'] = st.secrets['QDRANT_URL']
+if 'QDRANT_API_KEY' in st.secrets:
+    env['QDRANT_API_KEY'] = st.secrets['QDRANT_API_KEY']
 
 # Initialisation
 #streamlit deploy
