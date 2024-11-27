@@ -10,6 +10,7 @@ from typing import Union, List
 from sentence_transformers import SentenceTransformer
 from dotenv import dotenv_values
 from datetime import datetime
+import pytz
 
 # only local deploy
 #from dotenv import load_dotenv
@@ -468,9 +469,17 @@ def get_collection_info(collection_name):
         # Pobieranie informacji o kolekcji
         qdrant_client = get_qdrant_client()
         collection_info = qdrant_client.get_collection(collection_name)
-        current_datetime = datetime.now()
+        # Określenie strefy czasowej, np. Europe/Warsaw
+        local_timezone = pytz.timezone("Europe/Warsaw")
+
+        # Pobranie aktualnej daty i godziny w UTC
+        utc_time = datetime.now(pytz.utc)
+
+        # Konwersja na czas lokalny
+        local_time = utc_time.astimezone(local_timezone)
+
         return {
-            "Time of get info": current_datetime,
+            "Time of get info": local_time.strftime("%Y-%m-%d %H:%M:%S"),
             "Name": collection_name,
             #"Vectors Count": collection_info.vectors_count,
             #"Indexed Vectors Count": collection_info.indexed_vectors_count,
