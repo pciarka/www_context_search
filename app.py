@@ -557,7 +557,7 @@ def main():
         with tab32:
             st.write("Current Qdrant data")
             if st.button("Info about current Qdrant collecion "):
-            info = get_collection_info(QDRANT_COLLECTION_NAME_AI)
+                info = get_collection_info(QDRANT_COLLECTION_NAME_AI)
             if info:
                     # st.subheader("Szczegóły kolekcji")
                     for key, value in info.items():
