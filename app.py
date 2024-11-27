@@ -26,14 +26,17 @@ env = dotenv_values(".env")
 key=st.session_state.get("openai_api_key")
 ### Secrets using Streamlit Cloud Mechanism
 # https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management
-if 'QDRANT_URL' in st.secrets:
-    env['QDRANT_URL'] = st.secrets['QDRANT_URL']
-if 'QDRANT_API_KEY' in st.secrets:
-    env['QDRANT_API_KEY'] = st.secrets['QDRANT_API_KEY']
+
+#zmiana polączenia do qdrant
+# if 'QDRANT_URL' in st.secrets:
+#     env['QDRANT_URL'] = st.secrets['QDRANT_URL']
+# if 'QDRANT_API_KEY' in st.secrets:
+#     env['QDRANT_API_KEY'] = st.secrets['QDRANT_API_KEY']
+
 
 # Initialisation
 #streamlit deploy
-qdrant_client = QdrantClient(url='QDRANT_URL', api_key='QDRANT_API_KEY')
+# qdrant_client = QdrantClient(url='QDRANT_URL', api_key='QDRANT_API_KEY')
 # local deploy
 #qdrant_client = QdrantClient(url=os.getenv('QDRANT_URL'), api_key=os.getenv('QDRANT_API_KEY'))
 QDRANT_COLLECTION_NAME_AI = "shop_data_openAI"
@@ -53,6 +56,13 @@ if "user_input" not in st.session_state:
 if "user_input_sentence" not in st.session_state:
     st.session_state.user_input_sentence = ''
     user_input_sentence = st.session_state.user_input_sentence
+
+@st.cache_resource
+def get_qdrant_client():
+    return QdrantClient(
+    url=env["QDRANT_URL"], 
+    api_key=env["QDRANT_API_KEY"],
+)
 
 def process_uploaded_file(uploaded_file, file_type):
     """
@@ -234,15 +244,11 @@ def test_searching():
 
 def reset_collection(COLLECTION_NAME, DIM):
     try:
-        api_key = os.getenv('QDRANT_API_KEY')
-        url = os.getenv('QDRANT_URL')
-        client = QdrantClient(api_key=api_key, url=url)
-
+        qdrant_client = get_qdrant_client()
         collection_name = COLLECTION_NAME
-        
         # Usuń kolekcję, jeśli istnieje
-        if collection_name in [col.name for col in client.get_collections().collections]:
-            client.delete_collection(collection_name=collection_name)
+        if collection_name in [col.name for col in qdrant_client.get_collections().collections]:
+            qdrant_client.delete_collection(collection_name=collection_name)
             print(f"Collection '{collection_name}' was droped.")
 
         # Utwórz nową kolekcję
@@ -306,6 +312,7 @@ def openAI_load_data():
     # collection reset        
         reset_collection(QDRANT_COLLECTION_NAME_AI, 1536)
     # load data to collection
+        qdrant_client = get_qdrant_client()
         qdrant_client.upsert(
         collection_name=QDRANT_COLLECTION_NAME_AI,
         points=[
@@ -336,6 +343,7 @@ def sentence_transtormer_load_data():
     #    st.session_state.data=st.session_state.data.to_dict(orient='records')
     #st.write(st.session_state.data) #temporaty list print ok?
     # collection reset        
+        qdrant_client = get_qdrant_client()
         reset_collection(QDRANT_COLLECTION_NAME_SENTENCE, 768)
     # load data to collection
         qdrant_client.upsert(
@@ -387,6 +395,7 @@ def open_AI_search(query_text: str, collection_name: str, limit: int = 10, score
     """
    
     # Vector similarity search
+    qdrant_client = get_qdrant_client()
     vector_results = qdrant_client.search(
         collection_name=collection_name,
         query_vector=get_embedding_ai(query_text),
@@ -427,6 +436,7 @@ def sentence_search(query_text: str, collection_name: str, limit: int = 10, scor
     """
    
     # Vector similarity search
+    qdrant_client = get_qdrant_client()
     vector_results = qdrant_client.search(
         collection_name=collection_name,
         query_vector=get_normalized_embedding(query_text),
@@ -457,6 +467,7 @@ def get_collection_info(collection_name):
     
     try:
         # Pobieranie informacji o kolekcji
+        qdrant_client = get_qdrant_client()
         collection_info = qdrant_client.get_collection(collection_name)
         
         return {
