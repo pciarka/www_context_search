@@ -558,7 +558,7 @@ def main():
             st.write("Current Qdrant data")
             if st.button("Info about current Qdrant collecion "):
                 info = get_collection_info(QDRANT_COLLECTION_NAME_AI)
-            if info:
+                if info:
                     # st.subheader("Szczegóły kolekcji")
                     for key, value in info.items():
                         st.write(f"{key}: {value}")
