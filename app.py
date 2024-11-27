@@ -26,12 +26,10 @@ env = dotenv_values(".env")
 key=st.session_state.get("openai_api_key")
 ### Secrets using Streamlit Cloud Mechanism
 # https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management
-
-#zmiana polączenia do qdrant
-# if 'QDRANT_URL' in st.secrets:
-#     env['QDRANT_URL'] = st.secrets['QDRANT_URL']
-# if 'QDRANT_API_KEY' in st.secrets:
-#     env['QDRANT_API_KEY'] = st.secrets['QDRANT_API_KEY']
+if 'QDRANT_URL' in st.secrets:
+    env['QDRANT_URL'] = st.secrets['QDRANT_URL']
+if 'QDRANT_API_KEY' in st.secrets:
+    env['QDRANT_API_KEY'] = st.secrets['QDRANT_API_KEY']
 
 
 # Initialisation
