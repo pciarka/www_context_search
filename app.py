@@ -9,6 +9,7 @@ from qdrant_client.http.models import Filter, FieldCondition, MatchValue, Search
 from typing import Union, List
 from sentence_transformers import SentenceTransformer
 from dotenv import dotenv_values
+from datetime import datetime
 
 # only local deploy
 #from dotenv import load_dotenv
@@ -467,8 +468,9 @@ def get_collection_info(collection_name):
         # Pobieranie informacji o kolekcji
         qdrant_client = get_qdrant_client()
         collection_info = qdrant_client.get_collection(collection_name)
-        
+        current_datetime = datetime.now()
         return {
+            "Time of get info": current_datetime,
             "Name": collection_name,
             #"Vectors Count": collection_info.vectors_count,
             #"Indexed Vectors Count": collection_info.indexed_vectors_count,
@@ -591,7 +593,7 @@ def main():
             if st.button("Info about current Qdrant collecion"):
                 info=get_collection_info(QDRANT_COLLECTION_NAME_SENTENCE)
                 if info:
-                    st.subheader("Szczegóły kolekcji")
+                    #st.subheader("Szczegóły kolekcji")
                     for key, value in info.items():
                         st.write(f"{key}: {value}")
         with tab43:
