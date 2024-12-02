@@ -492,7 +492,7 @@ def get_collection_info(collection_name):
         return None
 
 def main():
-    st.title("Text & Context searching tests")
+    st.title("Text & Embeddings searching")
     
     # Zakładki
     tab1, tab2, tab3, tab4 = st.tabs(["Load data", "Text searching", "OpenAI ada 002", "Sentence transformers"])
