@@ -5,19 +5,14 @@ from typing import Union, List
 from sentence_transformers import SentenceTransformer
 from io import BytesIO
 
-
-
 #create data frame from uploaded file
 def process_uploaded_file(uploaded_file, file_type):
-
     try:
-        
         bytes_data = BytesIO(uploaded_file.read())
         st.session_state.file_buffer = bytes_data
         
         #xlsx
         if file_type == "xlsx":
-            
             df = pd.read_excel(
                 bytes_data, 
                 engine='openpyxl',
@@ -40,16 +35,13 @@ def process_uploaded_file(uploaded_file, file_type):
             )
         
         return df
-    
-    
     except Exception as e:
         st.error(f"Error while processing file: {str(e)}")
         return None
 
 # Load file with streamlit interface
 def load_data():
-    
-    option = st.selectbox(
+    option = st.sidebar.selectbox(
         "Choose file format",
         ("Upload .xlsx", "Upload .csv"),
         key="file_format"
@@ -57,7 +49,7 @@ def load_data():
     
     try:
         if option == "Upload .xlsx":
-            uploaded_file = st.file_uploader(
+            uploaded_file = st.sidebar.file_uploader(
                 "Choose Excel file",
                 type=["xlsx"],
                 key="excel_uploader"
@@ -69,7 +61,7 @@ def load_data():
                 sheet_names = xls.sheet_names
                 
                 # Sheet selector
-                selected_sheet = st.selectbox(
+                selected_sheet = st.sidebar.selectbox(
                     "Choose sheet",
                     sheet_names,
                     key="sheet_selector"
@@ -90,11 +82,11 @@ def load_data():
                 
                 if df is not None:
                     st.session_state.data = df
-                    st.success(f"Succesfuly load Excel sheet: {selected_sheet}")
+                    st.sidebar.success(f"Succesfuly load Excel sheet: {selected_sheet}")
                     return df
                     
         elif option == "Upload .csv":
-            uploaded_file = st.file_uploader(
+            uploaded_file = st.sidebar.file_uploader(
                 "Choose CSV file",
                 type=["csv"],
                 key="csv_uploader"
@@ -102,13 +94,13 @@ def load_data():
             
             if uploaded_file is not None:
                 # csv encoding and separator
-                st.session_state.encoding = st.selectbox(
+                st.session_state.encoding = st.sidebar.selectbox(
                     "Choose encoding",
                     options=["utf-8", "cp1250", "iso-8859-1"],
                     key="encoding"
                 )
                 
-                st.session_state.separator = st.selectbox(
+                st.session_state.separator = st.sidebar.selectbox(
                     "Choose separator",
                     options=[",", ";", "|", "\t"],
                     key="separator"
@@ -117,17 +109,15 @@ def load_data():
                 df = process_uploaded_file(uploaded_file, "csv")
                 if df is not None:
                     st.session_state.data = df
-                    st.success(f"Succesfuly load file: {uploaded_file.name}")
+                    st.sidebar.success(f"Succesfuly load file: {uploaded_file.name}")
                     return df
                     
         if st.session_state.data is None:
-            st.info("Choose file to load")
+            st.sidebar.info("Choose file to load")
             
     except Exception as e:
-        st.error(f"Load error: {str(e)}")
+        st.sidebar.error(f"Load error: {str(e)}")
         return None
-    
-    
     
 def get_normalized_embedding(
     text: Union[str, List[str]], 

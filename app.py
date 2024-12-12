@@ -1,14 +1,9 @@
-from qdrant_client.models import PointStruct, MatchText
-from qdrant_client.http.models import Filter, FieldCondition
 from dotenv import dotenv_values
-from openai import OpenAI
 import streamlit as st
 
-from qdrant_communication import get_qdrant_client, reset_collection, get_collection_info, sentence_search, sentence_transtormer_load_data, openAI_load_data
+from qdrant_communication import get_collection_info, sentence_search, sentence_transtormer_load_data, openAI_load_data, open_AI_search
 from data_manipulation import load_data
 import global_variables
-
-
 
 def test_searching():
     """
@@ -69,75 +64,14 @@ def test_searching():
                 st.subheader(f"Rozkład {col}")
                 st.bar_chart(results[col].value_counts())
 
-
-
-
-
-def get_embedding_ai(text):
-    openai_client = OpenAI(api_key=st.session_state.get("openai_api_key"))
-    result = openai_client.embeddings.create(
-        input=[text],
-        model=global_variables.EMBEDDING_MODEL,
-    )
-
-    return result.data[0].embedding  
-
-
-
-# Performs both vector similarity search and text search in Qdrant collection.
-
-# Args:
-#     query_text (str): Text to search for
-#     collection_name (str): Name of the Qdrant collection
-#     limit (int): Maximum number of results to return
-#     score_threshold (float): Minimum similarity score threshold
-    
-# Returns:
-#     tuple: Two lists of results - vector search results and text search results
-
-def open_AI_search(query_text: str, collection_name: str, limit: int = 10, score_threshold: float = 0.2):
-
-
-   
-    # Vector similarity search
-    qdrant_client = get_qdrant_client()
-    vector_results = qdrant_client.search(
-        collection_name=collection_name,
-        query_vector=get_embedding_ai(query_text),
-        limit=limit,
-        score_threshold=score_threshold
-    )
-    
-    # Text search using payload field
-    text_search_results = qdrant_client.scroll(
-        collection_name=collection_name,
-        scroll_filter=Filter(
-            must=[
-                FieldCondition(
-                    key="name",
-                    match=MatchText(
-                        text=query_text
-                    )
-                )
-            ]
-        ),
-        limit=limit
-    )[0]  # [0] because scroll returns tuple (results, next_page_offset)
-    
-    return vector_results, text_search_results
-
-
-
 def main():
     
     env = dotenv_values(".env")
     
-
     if 'QDRANT_URL' in st.secrets:
         env['QDRANT_URL'] = st.secrets['QDRANT_URL']
     if 'QDRANT_API_KEY' in st.secrets:
         env['QDRANT_API_KEY'] = st.secrets['QDRANT_API_KEY']
-
 
     if 'data' not in st.session_state:
         st.session_state.data = None
@@ -150,56 +84,52 @@ def main():
         st.session_state.user_input_sentence = ''
         user_input_sentence = st.session_state.user_input_sentence
 
-        
-        
+    st.sidebar.title("Load data")
+    st.sidebar.write("Proper file format: id_product, category root, category, name, description.")
     
+    # Path to the Excel file
+    file_path = "example_file.xlsx"
+
+    # Read the file in binary mode
+    with open(file_path, "rb") as file:
+        file_data = file.read()
+
+    # Display the download button
+    st.sidebar.download_button(
+        label="Download example Excel File",
+        data=file_data,
+        file_name="example_file.xlsx",
+        mime="application/vnd.ms-excel"
+    )
+
+    # Przycisk do resetowania
+    if st.sidebar.button("Reset data"):
+        st.session_state.data = None
+        st.session_state.file_buffer = None
+        #st.experimental_rerun()
+    
+    # Wczytaj dane
+    df = load_data()
+    
+    # Wyświetl dane jeśli są dostępne
+    if df is not None:
+        st.sidebar.write("Look for upload data:")
+        st.sidebar.dataframe(df.head())
+        
+        # Informacje o danych
+        st.sidebar.write("Info:")
+        st.sidebar.write(f"Rows: {df.shape[0]}")
+        st.sidebar.write(f"Columns: {df.shape[1]}")
+        st.sidebar.write("Columns name:", df.columns.tolist())
+
+        # Opcjonalnie: statystyki kolumn
+        if st.sidebar.checkbox("Statistic of columns"):
+            st.sidebar.write(df.describe())
+
     st.title("Text & Embeddings searching")
     
     # Zakładki
-    tab1, tab2, tab3, tab4 = st.tabs(["Load data", "Text searching", "OpenAI ada 002", "Sentence transformers"])
-    
-    with tab1:
-        st.write("Proper file format: id_product, category root, category, name, description.")
-        
-        # Path to the Excel file
-        file_path = "example_file.xlsx"
-
-        # Read the file in binary mode
-        with open(file_path, "rb") as file:
-            file_data = file.read()
-
-        # Display the download button
-        st.download_button(
-            label="Download example Excel File",
-            data=file_data,
-            file_name="example_file.xlsx",
-            mime="application/vnd.ms-excel"
-            )
-            
-
-        # Przycisk do resetowania
-        if st.button("Reset data"):
-            st.session_state.data = None
-            st.session_state.file_buffer = None
-            #st.experimental_rerun()
-        
-        # Wczytaj dane
-        df = load_data()
-        
-        # Wyświetl dane jeśli są dostępne
-        if df is not None:
-            st.write("Look for upload data:")
-            st.dataframe(df.head())
-            
-            # Informacje o danych
-            st.write("Info:")
-            st.write(f"Rows: {df.shape[0]}")
-            st.write(f"Columns: {df.shape[1]}")
-            st.write("Columns name:", df.columns.tolist())
-
-            # Opcjonalnie: statystyki kolumn
-            if st.checkbox("Statistic of columns"):
-                st.write(df.describe())
+    tab2, tab3, tab4 = st.tabs(["Text searching", "OpenAI ada 002", "Sentence transformers"])
     
     with tab2:
         st.header("Text searching")
@@ -269,10 +199,6 @@ def main():
         with tab43:
             st.write("Load data to Qdrant")
             sentence_transtormer_load_data()  
-            
-            
-        
-
 
 if __name__ == "__main__":
     main()
