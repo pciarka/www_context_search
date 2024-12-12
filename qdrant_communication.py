@@ -142,7 +142,7 @@ def sentence_transtormer_load_data():
     return 
 
 
-
+#think of another name for it
 def openAI_load_data():
     # Sprawdź czy dane są załadowane
     # if st.session_state.data is None:
@@ -171,6 +171,7 @@ def openAI_load_data():
         )
         for idx, row in st.session_state.data.iterrows()
         ]
+        
         )
         st.toast("Data was succesufy loaded to Qdrant collection '{global_variables.QDRANT_COLLECTION_NAME_AI}'", icon="🎉")
     return 

@@ -1,5 +1,6 @@
 from dotenv import dotenv_values
 import streamlit as st
+import pandas as pd
 
 from qdrant_communication import get_collection_info, sentence_search, sentence_transtormer_load_data, openAI_load_data, open_AI_search
 from data_manipulation import load_data
@@ -87,31 +88,22 @@ def main():
     st.sidebar.title("Load data")
     st.sidebar.write("Proper file format: id_product, category root, category, name, description.")
     
-    # Path to the Excel file
-    file_path = "example_file.xlsx"
+    # Path to the default Excel file
+    default_file_path = "dane wszystkodlazwierzat.pl.xlsx"
 
-    # Read the file in binary mode
-    with open(file_path, "rb") as file:
-        file_data = file.read()
+    # File uploader
+    uploaded_file = st.sidebar.file_uploader("Choose a file", type=["xlsx", "csv"])
 
-    # Display the download button
-    st.sidebar.download_button(
-        label="Download example Excel File",
-        data=file_data,
-        file_name="example_file.xlsx",
-        mime="application/vnd.ms-excel"
-    )
+    if uploaded_file is not None:
+        # Process uploaded file
+        df = load_data()
+    else:
+        # Load default file if no file is uploaded
+        df = pd.read_excel(default_file_path, engine='openpyxl')
+        st.session_state.data = df
+        st.sidebar.success(f"Successfully loaded default file: {default_file_path}")
 
-    # Przycisk do resetowania
-    if st.sidebar.button("Reset data"):
-        st.session_state.data = None
-        st.session_state.file_buffer = None
-        #st.experimental_rerun()
-    
-    # Wczytaj dane
-    df = load_data()
-    
-    # Wyświetl dane jeśli są dostępne
+    # Display data if available
     if df is not None:
         st.sidebar.write("Look for upload data:")
         st.sidebar.dataframe(df.head())
@@ -128,77 +120,58 @@ def main():
 
     st.title("Text & Embeddings searching")
     
-    # Zakładki
-    tab2, tab3, tab4 = st.tabs(["Text searching", "OpenAI ada 002", "Sentence transformers"])
+    # Create tabs
+    tab1, tab2 = st.tabs(["Main", "Advanced"])
     
-    with tab2:
-        st.header("Text searching")
-        test_searching()
-
-    with tab3:
-        st.write("OpenAI ada 002 model - paid commercial model")
-        tab31, tab32, tab33 = st.tabs(["Searching", "Current Qdrant data", "Load data to Qdrant"])
-        with tab31:
-            user_input = st.text_input("Search", st.session_state.user_input, key=f"input_2")
-            if st.button("Confirm", key=f"input_3"):
+    with tab1:
+        # Common search bar
+        user_input = st.text_input("Search", st.session_state.user_input, key="common_search")
+        if st.button("Confirm", key="common_search_button"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("OpenAI ada 002 Results")
                 vector_results, text_results = open_AI_search(
-                query_text=user_input,
-                collection_name=global_variables.QDRANT_COLLECTION_NAME_AI
-)
-
+                    query_text=user_input,
+                    collection_name=global_variables.QDRANT_COLLECTION_NAME_AI
+                )
                 st.write("Vector search result:")
                 for result in vector_results:
                     st.write('Name:', result.payload["name"], 
-                    'ID:', result.payload["id_product"], 
-                    'Score:', round(result.score, 3))
+                             'ID:', result.payload["id_product"], 
+                             'Score:', round(result.score, 3))
 
                 st.write("\nText search result:")
                 for result in text_results:
                     st.write('Name:', result.payload["name"], 
-                    'ID:', result.payload["id_product"])
-        with tab32:
-            st.write("Current Qdrant data")
-            if st.button("Info about current Qdrant collecion "):
-                info = get_collection_info(global_variables.QDRANT_COLLECTION_NAME_AI)
-                if info:
-                    # st.subheader("Szczegóły kolekcji")
-                    for key, value in info.items():
-                        st.write(f"{key}: {value}")
+                             'ID:', result.payload["id_product"])
 
-        with tab33:
-            st.write("Load data to Qdrant")
-            openAI_load_data()
-    with tab4:
-        st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
-        tab41, tab42, tab43 = st.tabs(["Searching", "Current Qdrant data", "Load data to Qdrant"])
-        with tab41:
-            user_input = st.text_input("Search", st.session_state.user_input, key=f"input_10")
-            if st.button("Zatwierdź ", key=f"input_11"):
+            with col2:
+                st.subheader("Sentence Transformers Results")
                 vector_results, text_results = sentence_search(
-                query_text=user_input,
-                collection_name=global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
-                st.write("Wyniki wyszukiwania wektorowego:")
+                    query_text=user_input,
+                    collection_name=global_variables.QDRANT_COLLECTION_NAME_SENTENCE
+                )
+                st.write("Vector search result:")
                 for result in vector_results:
                     st.write('Name:', result.payload["name"], 
-                    'ID:', result.payload["id_product"], 
-                    'Score:', round(result.score, 3))
+                             'ID:', result.payload["id_product"], 
+                             'Score:', round(result.score, 3))
 
-                st.write("\nWyniki wyszukiwania tekstowego:")
+                st.write("\nText search result:")
                 for result in text_results:
                     st.write('Name:', result.payload["name"], 
-                    'ID:', result.payload["id_product"])
+                             'ID:', result.payload["id_product"])
 
-        with tab42:
-            st.write("Current Qdrant data")
-            if st.button("Info about current Qdrant collecion"):
-                info=get_collection_info(global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
-                if info:
-                    #st.subheader("Szczegóły kolekcji")
-                    for key, value in info.items():
-                        st.write(f"{key}: {value}")
-        with tab43:
-            st.write("Load data to Qdrant")
-            sentence_transtormer_load_data()  
+    with tab2:
+        st.header("Advanced Options")
+        test_searching()
+        
+        st.subheader("Vector Database Operations")
+        if st.button("Vector db new data load"):
+            openAI_load_data()
+        if st.button("Load data to Qdrant"):
+            sentence_transtormer_load_data()
 
 if __name__ == "__main__":
     main()
