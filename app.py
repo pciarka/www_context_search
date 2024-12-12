@@ -1,10 +1,7 @@
-from qdrant_client.models import PointStruct, MatchText
-from qdrant_client.http.models import Filter, FieldCondition
 from dotenv import dotenv_values
-from openai import OpenAI
 import streamlit as st
 
-from qdrant_communication import get_qdrant_client, reset_collection, get_collection_info, sentence_search, sentence_transtormer_load_data, openAI_load_data
+from qdrant_communication import get_collection_info, sentence_search, sentence_transtormer_load_data, openAI_load_data, open_AI_search
 from data_manipulation import load_data
 import global_variables
 
@@ -71,60 +68,6 @@ def test_searching():
 
 
 
-
-
-def get_embedding_ai(text):
-    openai_client = OpenAI(api_key=st.session_state.get("openai_api_key"))
-    result = openai_client.embeddings.create(
-        input=[text],
-        model=global_variables.EMBEDDING_MODEL,
-    )
-
-    return result.data[0].embedding  
-
-
-
-# Performs both vector similarity search and text search in Qdrant collection.
-
-# Args:
-#     query_text (str): Text to search for
-#     collection_name (str): Name of the Qdrant collection
-#     limit (int): Maximum number of results to return
-#     score_threshold (float): Minimum similarity score threshold
-    
-# Returns:
-#     tuple: Two lists of results - vector search results and text search results
-
-def open_AI_search(query_text: str, collection_name: str, limit: int = 10, score_threshold: float = 0.2):
-
-
-   
-    # Vector similarity search
-    qdrant_client = get_qdrant_client()
-    vector_results = qdrant_client.search(
-        collection_name=collection_name,
-        query_vector=get_embedding_ai(query_text),
-        limit=limit,
-        score_threshold=score_threshold
-    )
-    
-    # Text search using payload field
-    text_search_results = qdrant_client.scroll(
-        collection_name=collection_name,
-        scroll_filter=Filter(
-            must=[
-                FieldCondition(
-                    key="name",
-                    match=MatchText(
-                        text=query_text
-                    )
-                )
-            ]
-        ),
-        limit=limit
-    )[0]  # [0] because scroll returns tuple (results, next_page_offset)
-    
-    return vector_results, text_search_results
 
 
 
