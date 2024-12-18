@@ -70,13 +70,39 @@ def test_searching():
                 st.bar_chart(results[col].value_counts())
 
 def main():
+
+    # QDRANT_URL
+    long_qurl = st.secrets['QDRANT_URL']
+
+    # Ogranicz tekst do 100 znaków
+    short_qurl = long_qurl[:10] + '...' if len(long_qurl) > 10 else long_qurl
+
+    st.write("Zawartość st.secrets['A'] (ograniczona do 10 znaków):", short_qurl)  
+
+    # QDRANT_API_KEY
+    long_qapi = st.secrets['QDRANT_API_KEY']
+
+    # Ogranicz tekst do 100 znaków
+    short_qapi = long_qapi[:10] + '...' if len(long_qapi) > 10 else long_qapi
+
+    st.write("Zawartość st.secrets['A'] (ograniczona do 10 znaków):", short_qapi) 
+
+    # OPENAI_API_KEY
+    long_opapi = st.secrets['OPENAI_API_KEY']
+
+    # Ogranicz tekst do 100 znaków
+    short_opapi = long_opapi[:10] + '...' if len(long_opapi) > 10 else long_opapi
+
+    st.write("Zawartość st.secrets['A'] (ograniczona do 10 znaków):", short_opapi) 
+
+   
+ 
+    # env = dotenv_values(".env")
     
-    env = dotenv_values(".env")
-    
-    if 'QDRANT_URL' in st.secrets:
-        env['QDRANT_URL'] = st.secrets['QDRANT_URL']
-    if 'QDRANT_API_KEY' in st.secrets:
-        env['QDRANT_API_KEY'] = st.secrets['QDRANT_API_KEY']
+    # if 'QDRANT_URL' in st.secrets:
+    #     env['QDRANT_URL'] = st.secrets['QDRANT_URL']
+    # if 'QDRANT_API_KEY' in st.secrets:
+    #     env['QDRANT_API_KEY'] = st.secrets['QDRANT_API_KEY']
 
     if 'data' not in st.session_state:
         st.session_state.data = None
