@@ -19,8 +19,8 @@ EMBEDDING_MODEL = "text-embedding-ada-002" #OpenAI used model
 def get_qdrant_client():
     env = dotenv_values(".env")
     return QdrantClient(
-    url=env["QDRANT_URL"], 
-    api_key=env["QDRANT_API_KEY"],
+    url=st.secrets['QDRANT_URL'], 
+    api_key=st.secrets['OPENAI_API_KEY'],
 )
 
 def reset_collection(COLLECTION_NAME, DIM):
