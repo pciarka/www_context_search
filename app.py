@@ -98,10 +98,8 @@ def main():
     
     st.title("Text & Embeddings searching")
     
-    # Zakładki
-    tab1, tab2, tab3, tab4 = st.tabs(["Load data", "Text searching", "OpenAI ada 002", "Sentence transformers"])
-    
-    with tab1:
+    # Wczytywanie danych
+    with st.sidebar:
         st.write("Proper file format: id_product, category root, category, name, description.")
         
         # Path to the Excel file
@@ -117,23 +115,21 @@ def main():
             data=file_data,
             file_name="example_file.xlsx",
             mime="application/vnd.ms-excel"
-            )
-            
+        )
 
         # Przycisk do resetowania
         if st.button("Reset data"):
             st.session_state.data = None
             st.session_state.file_buffer = None
             #st.experimental_rerun()
-        
+
         # Wczytaj dane
         df = load_data()
         
-        # Wyświetl dane jeśli są dostępne
         if df is not None:
             st.write("Look for upload data:")
             st.dataframe(df.head())
-            
+
             # Informacje o danych
             st.write("Info:")
             st.write(f"Rows: {df.shape[0]}")
@@ -143,17 +139,65 @@ def main():
             # Opcjonalnie: statystyki kolumn
             if st.checkbox("Statistic of columns"):
                 st.write(df.describe())
+                
     
-    with tab2:
-        st.header("Text searching")
-        test_searching()
-
-    with tab3:
+    # Zakładki
+    main, advanced=st.tabs(["Main", "Advanced"])
+    
+    
+    
+    
+    with advanced:
         st.write("OpenAI ada 002 model - paid commercial model")
-        tab31, tab32, tab33 = st.tabs(["Searching", "Current Qdrant data", "Load data to Qdrant"])
-        with tab31:
-            user_input = st.text_input("Search", st.session_state.user_input, key=f"input_2")
-            if st.button("Confirm", key=f"input_3"):
+
+        #show current data
+        if st.button("Info about current Qdrant collecion "):
+            info = get_collection_info(global_variables.QDRANT_COLLECTION_NAME_AI)
+            if info:
+                # st.subheader("Szczegóły kolekcji")
+                for key, value in info.items():
+                    st.write(f"{key}: {value}")
+
+        #load data
+        st.write("Load data to Qdrant")
+        openAI_load_data()
+
+        st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
+        #show current data
+        st.write("Current Qdrant data")
+        if st.button("Info about current Qdrant collecion"):
+            info=get_collection_info(global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
+            if info:
+                #st.subheader("Szczegóły kolekcji")
+                for key, value in info.items():
+                    st.write(f"{key}: {value}")
+        #load data
+        st.write("Load data to Qdrant")
+        sentence_transtormer_load_data()  
+
+        
+    
+    
+    
+
+
+    
+
+    with main:
+        #tab2, tab3, tab4 = st.tabs(["Text searching", "OpenAI ada 002", "Sentence transformers"])
+        user_input = st.text_input("Search", st.session_state.user_input, key=f"input_2")
+        search_button_clocked = st.button("Search", key=f"input_1")
+        col1, col2 = st.columns([1, 1])
+        
+        # with tab2:
+        #     st.header("Text searching")
+        #     test_searching()
+
+        with col1:
+            st.write("OpenAI ada 002 model - paid commercial model")
+            
+            
+            if search_button_clocked:
                 vector_results, text_results = open_AI_search(
                 query_text=user_input,
                 collection_name=global_variables.QDRANT_COLLECTION_NAME_AI
@@ -169,28 +213,16 @@ def main():
                 for result in text_results:
                     st.write('Name:', result.payload["name"], 
                     'ID:', result.payload["id_product"])
-        with tab32:
-            st.write("Current Qdrant data")
-            if st.button("Info about current Qdrant collecion "):
-                info = get_collection_info(global_variables.QDRANT_COLLECTION_NAME_AI)
-                if info:
-                    # st.subheader("Szczegóły kolekcji")
-                    for key, value in info.items():
-                        st.write(f"{key}: {value}")
 
-        with tab33:
-            st.write("Load data to Qdrant")
-            openAI_load_data()
-    with tab4:
-        st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
-        tab41, tab42, tab43 = st.tabs(["Searching", "Current Qdrant data", "Load data to Qdrant"])
-        with tab41:
-            user_input = st.text_input("Search", st.session_state.user_input, key=f"input_10")
-            if st.button("Zatwierdź ", key=f"input_11"):
+        with col2:
+            st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
+
+            if search_button_clocked:
                 vector_results, text_results = sentence_search(
                 query_text=user_input,
                 collection_name=global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
                 st.write("Wyniki wyszukiwania wektorowego:")
+                
                 for result in vector_results:
                     st.write('Name:', result.payload["name"], 
                     'ID:', result.payload["id_product"], 
@@ -201,17 +233,7 @@ def main():
                     st.write('Name:', result.payload["name"], 
                     'ID:', result.payload["id_product"])
 
-        with tab42:
-            st.write("Current Qdrant data")
-            if st.button("Info about current Qdrant collecion"):
-                info=get_collection_info(global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
-                if info:
-                    #st.subheader("Szczegóły kolekcji")
-                    for key, value in info.items():
-                        st.write(f"{key}: {value}")
-        with tab43:
-            st.write("Load data to Qdrant")
-            sentence_transtormer_load_data()  
+
             
             
         
