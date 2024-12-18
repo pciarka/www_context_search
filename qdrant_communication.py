@@ -10,7 +10,10 @@ from datetime import datetime
 from data_manipulation import get_normalized_embedding
 import global_variables
 
-
+QDRANT_COLLECTION_NAME_SENTENCE = "shop_data_sentence_transformer"
+QDRANT_COLLECTION_NAME_AI = "shop_data_openAI"
+EMBEDDING_DIM = 1536
+EMBEDDING_MODEL = "text-embedding-ada-002" #OpenAI used model
 
 @st.cache_resource
 def get_qdrant_client():

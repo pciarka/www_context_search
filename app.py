@@ -1,7 +1,6 @@
 from dotenv import dotenv_values
 import streamlit as st
 import pandas as pd
-
 from qdrant_communication import get_collection_info, sentence_search, sentence_transtormer_load_data, openAI_load_data, open_AI_search
 from data_manipulation import load_data
 import global_variables
