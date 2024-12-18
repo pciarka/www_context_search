@@ -148,32 +148,34 @@ def main():
     
     
     with advanced:
-        st.write("OpenAI ada 002 model - paid commercial model")
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.write("OpenAI ada 002 model - paid commercial model")
 
-        #show current data
-        if st.button("Info about current Qdrant collecion "):
-            info = get_collection_info(global_variables.QDRANT_COLLECTION_NAME_AI)
-            if info:
-                # st.subheader("Szczegóły kolekcji")
-                for key, value in info.items():
-                    st.write(f"{key}: {value}")
+            #show current data
+            if st.button("Info about current Qdrant collecion "):
+                info = get_collection_info(global_variables.QDRANT_COLLECTION_NAME_AI)
+                if info:
+                    # st.subheader("Szczegóły kolekcji")
+                    for key, value in info.items():
+                        st.write(f"{key}: {value}")
 
-        #load data
-        st.write("Load data to Qdrant")
-        openAI_load_data()
-
-        st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
-        #show current data
-        st.write("Current Qdrant data")
-        if st.button("Info about current Qdrant collecion"):
-            info=get_collection_info(global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
-            if info:
-                #st.subheader("Szczegóły kolekcji")
-                for key, value in info.items():
-                    st.write(f"{key}: {value}")
-        #load data
-        st.write("Load data to Qdrant")
-        sentence_transtormer_load_data()  
+            #load data
+            st.write("Load data to Qdrant")
+            openAI_load_data()
+        with col2:
+            st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
+            #show current data
+            st.write("Current Qdrant data")
+            if st.button("Info about current Qdrant collecion"):
+                info=get_collection_info(global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
+                if info:
+                    #st.subheader("Szczegóły kolekcji")
+                    for key, value in info.items():
+                        st.write(f"{key}: {value}")
+            #load data
+            st.write("Load data to Qdrant")
+            sentence_transtormer_load_data()  
 
         
     
