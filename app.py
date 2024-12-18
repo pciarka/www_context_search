@@ -6,6 +6,11 @@ from qdrant_communication import get_collection_info, sentence_search, sentence_
 from data_manipulation import load_data
 import global_variables
 
+QDRANT_COLLECTION_NAME_SENTENCE = "shop_data_sentence_transformer"
+QDRANT_COLLECTION_NAME_AI = "shop_data_openAI"
+EMBEDDING_DIM = 1536
+EMBEDDING_MODEL = "text-embedding-ada-002" #OpenAI used model
+
 def test_searching():
     """
     Zakładka do testowania wyszukiwania w danych
@@ -168,10 +173,15 @@ def main():
         test_searching()
         
         st.subheader("Vector Database Operations")
-        if st.button("Vector db new data load"):
-            openAI_load_data()
-        if st.button("Load data to Qdrant"):
+
+        st.subheader("Sentence transformers database")
+        if st.button("ST data -  Load data to Qdrant"):
             sentence_transtormer_load_data()
+        if st.button("Look Sententence transformers database"):
+            get_collection_info(QDRANT_COLLECTION_NAME_SENTENCE)
+        st.subheader("Ada-002 Open AI database")
+        if st.button("ADA data -  Load data to Qdrant"):
+            openAI_load_data()
 
 if __name__ == "__main__":
     main()

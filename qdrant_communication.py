@@ -10,6 +10,8 @@ from datetime import datetime
 from data_manipulation import get_normalized_embedding
 import global_variables
 
+
+
 @st.cache_resource
 def get_qdrant_client():
     env = dotenv_values(".env")
@@ -144,21 +146,21 @@ def sentence_transtormer_load_data():
 
 #think of another name for it
 def openAI_load_data():
-    # Sprawdź czy dane są załadowane
-    # if st.session_state.data is None:
-    #     st.warning("Load data first at tab 'Load data'")
-    #     return
-    if st.button("Vector db new data load"):
+    #Sprawdź czy dane są załadowane
+    if st.session_state.data is None:
+        st.warning("Load data first at tab 'Load data'")
+        return
     # usunięcie \n
-    #    st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
+        st.session_state.data=st.session_state.data.map(lambda x: x.replace('\n', ' ') if isinstance(x, str) else x)
     # przeształcenie data na listę
-    #    st.session_state.data=st.session_state.data.to_dict(orient='records')
-    #st.write(st.session_state.data) #temporaty list print ok?
+        st.session_state.data=st.session_state.data.to_dict(orient='records')
+    st.write(st.session_state.data) #temporaty list print ok?
+
     # collection reset        
-        reset_collection(global_variables.QDRANT_COLLECTION_NAME_AI, 1536)
+    reset_collection(global_variables.QDRANT_COLLECTION_NAME_AI, 1536)
     # load data to collection
-        qdrant_client = get_qdrant_client()
-        qdrant_client.upsert(
+    qdrant_client = get_qdrant_client()
+    qdrant_client.upsert(
         collection_name=global_variables.QDRANT_COLLECTION_NAME_AI,
         points=[
         PointStruct(
@@ -173,8 +175,8 @@ def openAI_load_data():
         ]
         
         )
-        st.toast("Data was succesufy loaded to Qdrant collection '{global_variables.QDRANT_COLLECTION_NAME_AI}'", icon="🎉")
-    return 
+    st.toast("Data was succesufy loaded to Qdrant collection '{global_variables.QDRANT_COLLECTION_NAME_AI}'", icon="🎉")
+ 
 
 ###
 ### OpenAI functions
