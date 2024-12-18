@@ -116,63 +116,101 @@ def main():
 
     st.title("Text & Embeddings searching")
     
-    # Create tabs
-    tab1, tab2 = st.tabs(["Main", "Advanced"])
+   # Zakładki
+    main, advanced=st.tabs(["Main", "Advanced"])
     
-    with tab1:
-        # Common search bar
-        user_input = st.text_input("Search", st.session_state.user_input, key="common_search")
-        if st.button("Confirm", key="common_search_button"):
-            col1, col2 = st.columns(2)
+    
+    
+    
+    with advanced:
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.write("OpenAI ada 002 model - paid commercial model")
+
+            #show current data
+            if st.button("Info about current Qdrant collecion "):
+                info = get_collection_info(global_variables.QDRANT_COLLECTION_NAME_AI)
+                if info:
+                    # st.subheader("Szczegóły kolekcji")
+                    for key, value in info.items():
+                        st.write(f"{key}: {value}")
+
+            #load data
+            st.write("Load data to Qdrant")
+            if st.button("Load data to ADA AI Collection"):
+                openAI_load_data()
             
-            with col1:
-                st.subheader("OpenAI ada 002 Results")
-                vector_results, text_results = open_AI_search(
-                    query_text=user_input,
-                    collection_name=global_variables.QDRANT_COLLECTION_NAME_AI
-                )
-                st.write("Vector search result:")
-                for result in vector_results:
-                    st.write('Name:', result.payload["name"], 
-                             'ID:', result.payload["id_product"], 
-                             'Score:', round(result.score, 3))
+        with col2:
+            st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
+            #show current data
+            st.write("Current Qdrant data")
+            if st.button("Info about current Qdrant collecion"):
+                info=get_collection_info(global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
+                if info:
+                    #st.subheader("Szczegóły kolekcji")
+                    for key, value in info.items():
+                        st.write(f"{key}: {value}")
+            #load data
+            st.write("Load data to Qdrant")
+            sentence_transtormer_load_data()  
 
-                st.write("\nText search result:")
-                for result in text_results:
-                    st.write('Name:', result.payload["name"], 
-                             'ID:', result.payload["id_product"])
-
-            with col2:
-                st.subheader("Sentence Transformers Results")
-                vector_results, text_results = sentence_search(
-                    query_text=user_input,
-                    collection_name=global_variables.QDRANT_COLLECTION_NAME_SENTENCE
-                )
-                st.write("Vector search result:")
-                for result in vector_results:
-                    st.write('Name:', result.payload["name"], 
-                             'ID:', result.payload["id_product"], 
-                             'Score:', round(result.score, 3))
-
-                st.write("\nText search result:")
-                for result in text_results:
-                    st.write('Name:', result.payload["name"], 
-                             'ID:', result.payload["id_product"])
-
-    with tab2:
-        st.header("Advanced Options")
-        test_searching()
         
-        st.subheader("Vector Database Operations")
+    
+    
+    
 
-        st.subheader("Sentence transformers database")
-        if st.button("ST data -  Load data to Qdrant"):
-            sentence_transtormer_load_data()
-        if st.button("Look Sententence transformers database"):
-            get_collection_info(QDRANT_COLLECTION_NAME_SENTENCE)
-        st.subheader("Ada-002 Open AI database")
-        if st.button("ADA data -  Load data to Qdrant"):
-            openAI_load_data()
+
+    
+
+    with main:
+        #tab2, tab3, tab4 = st.tabs(["Text searching", "OpenAI ada 002", "Sentence transformers"])
+        user_input = st.text_input("Search", st.session_state.user_input, key=f"input_2")
+        search_button_clocked = st.button("Search", key=f"input_1")
+        col1, col2 = st.columns([1, 1])
+        
+        # with tab2:
+        #     st.header("Text searching")
+        #     test_searching()
+
+        with col1:
+            st.write("OpenAI ada 002 model - paid commercial model")
+            
+            
+            if search_button_clocked:
+                vector_results, text_results = open_AI_search(
+                query_text=user_input,
+                collection_name=global_variables.QDRANT_COLLECTION_NAME_AI
+)
+
+                st.write("Vector search result:")
+                for result in vector_results:
+                    st.write('Name:', result.payload["name"], 
+                    'ID:', result.payload["id_product"], 
+                    'Score:', round(result.score, 3))
+
+                st.write("\nText search result:")
+                for result in text_results:
+                    st.write('Name:', result.payload["name"], 
+                    'ID:', result.payload["id_product"])
+
+        with col2:
+            st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
+
+            if search_button_clocked:
+                vector_results, text_results = sentence_search(
+                query_text=user_input,
+                collection_name=global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
+                st.write("Wyniki wyszukiwania wektorowego:")
+                
+                for result in vector_results:
+                    st.write('Name:', result.payload["name"], 
+                    'ID:', result.payload["id_product"], 
+                    'Score:', round(result.score, 3))
+
+                st.write("\nWyniki wyszukiwania tekstowego:")
+                for result in text_results:
+                    st.write('Name:', result.payload["name"], 
+                    'ID:', result.payload["id_product"])
 
 if __name__ == "__main__":
     main()
