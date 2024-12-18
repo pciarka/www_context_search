@@ -215,7 +215,7 @@ def open_AI_search(query_text: str, collection_name: str, limit: int = 10, score
     return vector_results, text_search_results
 
 def get_embedding_ai(text):
-    openai_client = OpenAI(api_key=st.session_state.get("openai_api_key"))
+    openai_client = OpenAI(api_key=st.secrets['OPENAI_API_KEY'])
     result = openai_client.embeddings.create(
         input=[text],
         model=global_variables.EMBEDDING_MODEL,
