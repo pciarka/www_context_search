@@ -137,7 +137,7 @@ def main():
 
             #load data
             st.write("Load data to Qdrant")
-            if st.button("Load data to ADA AI Collection"):
+            if st.button("Load data to Qdrant"):
                 openAI_load_data()
             
         with col2:
