@@ -173,7 +173,8 @@ def main():
         #     test_searching()
 
         with col1:
-            st.write("OpenAI ada 002 model - paid commercial model")
+            st.markdown("### OpenAI ada 002 model")
+            st.markdown("*paid commercial model*")
             
             
             if search_button_clocked:
@@ -182,32 +183,33 @@ def main():
                 collection_name=global_variables.QDRANT_COLLECTION_NAME_AI
 )
 
-                st.write("Vector search result:")
+                st.markdown("### Vector search result:")
                 for result in vector_results:
                     st.write('Name:', result.payload["name"], 
                     'ID:', result.payload["id_product"], 
                     'Score:', round(result.score, 3))
 
-                st.write("\nText search result:")
+                st.markdown("### Text search result:")
                 for result in text_results:
                     st.write('Name:', result.payload["name"], 
                     'ID:', result.payload["id_product"])
 
         with col2:
-            st.write("multi qa mpnet base dot v1 - open soucre python sentence transformer library")
+            st.markdown("### Multi mpnet base dot v1")
+            st.markdown("*open soucre python sentence transformer library*")
 
             if search_button_clocked:
                 vector_results, text_results = sentence_search(
                 query_text=user_input,
                 collection_name=global_variables.QDRANT_COLLECTION_NAME_SENTENCE)
-                st.write("Wyniki wyszukiwania wektorowego:")
+                st.markdown("### Vector search result:")
                 
                 for result in vector_results:
                     st.write('Name:', result.payload["name"], 
                     'ID:', result.payload["id_product"], 
                     'Score:', round(result.score, 3))
 
-                st.write("\nWyniki wyszukiwania tekstowego:")
+                st.markdown("### Text search result:")
                 for result in text_results:
                     st.write('Name:', result.payload["name"], 
                     'ID:', result.payload["id_product"])
