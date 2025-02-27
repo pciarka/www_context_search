@@ -2,13 +2,15 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance, MatchText
 from qdrant_client.http.models import Filter, FieldCondition, MatchValue, SearchRequest
 import streamlit as st
-from openai import OpenAI
-from dotenv import dotenv_values
+import openai
 import pytz
 from datetime import datetime
-
 from data_manipulation import get_normalized_embedding
 import global_variables
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 
 QDRANT_COLLECTION_NAME_SENTENCE = "shop_data_sentence_transformer"
 QDRANT_COLLECTION_NAME_AI = "shop_data_openAI"
@@ -19,8 +21,8 @@ EMBEDDING_MODEL = "text-embedding-ada-002" #OpenAI used model
 def get_qdrant_client():
     # env = dotenv_values(".env")
     return QdrantClient(
-    url=st.secrets['QDRANT_URL'], 
-    api_key=st.secrets['QDRANT_API_KEY'],
+    url=os.getenv('QDRANT_URL'), 
+    api_key=os.getenv('QDRANT_API_KEY'),
 )
 
 def reset_collection(COLLECTION_NAME, DIM):
@@ -215,7 +217,7 @@ def open_AI_search(query_text: str, collection_name: str, limit: int = 10, score
     return vector_results, text_search_results
 
 def get_embedding_ai(text):
-    openai_client = OpenAI(api_key=st.secrets['OPENAI_API_KEY'])
+    openai_client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     result = openai_client.embeddings.create(
         input=[text],
         model=global_variables.EMBEDDING_MODEL,
