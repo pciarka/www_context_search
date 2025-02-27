@@ -118,10 +118,7 @@ def main():
     
    # Zakładki
     main, advanced=st.tabs(["Main", "Advanced"])
-    
-    
-    
-    
+     
     with advanced:
         col1, col2 = st.columns([1, 1])
         with col1:
