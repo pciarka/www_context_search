@@ -2,7 +2,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance, MatchText
 from qdrant_client.http.models import Filter, FieldCondition, MatchValue, SearchRequest
 import streamlit as st
-import openai
+from openai import OpenAI
 import pytz
 from datetime import datetime
 from data_manipulation import get_normalized_embedding
@@ -217,7 +217,8 @@ def open_AI_search(query_text: str, collection_name: str, limit: int = 10, score
     return vector_results, text_search_results
 
 def get_embedding_ai(text):
-    openai_client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+   # openai_client = openai.Client(api_key=os.getenv("OPENAI_API_KEY")) 
     result = openai_client.embeddings.create(
         input=[text],
         model=global_variables.EMBEDDING_MODEL,

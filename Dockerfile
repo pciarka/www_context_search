@@ -1,0 +1,14 @@
+# Użyj oficjalnego obrazu Pythona
+FROM python:3.11
+
+# Ustaw katalog roboczy w kontenerze
+WORKDIR /app
+
+# Skopiuj pliki aplikacji
+COPY . /app
+
+# Zainstaluj zależności
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Określ domyślną komendę startową
+CMD ["streamlit", "run", "APP.py", "--server.port=8501", "--server.address=0.0.0.0"]

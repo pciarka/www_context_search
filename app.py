@@ -4,17 +4,10 @@ from qdrant_communication import get_collection_info, sentence_search, sentence_
 from data_manipulation import load_data
 import global_variables
 
-
-
 QDRANT_COLLECTION_NAME_SENTENCE = "shop_data_sentence_transformer"
 QDRANT_COLLECTION_NAME_AI = "shop_data_openAI"
 EMBEDDING_DIM = 1536
 EMBEDDING_MODEL = "text-embedding-ada-002" #OpenAI used model
-
-import os
-from dotenv import load_dotenv
-load_dotenv()
-
 
 def test_searching():
     """
@@ -76,7 +69,7 @@ def test_searching():
                 st.bar_chart(results[col].value_counts())
 
 def main():
-   
+
     if 'data' not in st.session_state:
         st.session_state.data = None
     if 'file_buffer' not in st.session_state:
@@ -125,7 +118,10 @@ def main():
     
    # Zakładki
     main, advanced=st.tabs(["Main", "Advanced"])
-     
+    
+    
+    
+    
     with advanced:
         col1, col2 = st.columns([1, 1])
         with col1:
