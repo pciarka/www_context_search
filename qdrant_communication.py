@@ -17,12 +17,20 @@ QDRANT_COLLECTION_NAME_AI = "shop_data_openAI"
 EMBEDDING_DIM = 1536
 EMBEDDING_MODEL = "text-embedding-ada-002" #OpenAI used model
 
+def get_secret(secret_name):
+    secret_path = f"/run/secrets/{secret_name}"
+    if os.path.exists(secret_path):
+        with open(secret_path, "r") as f:
+            return f.read().strip()
+    # Fallback, np. przy lokalnym uruchamianiu poza Docker Swarm
+    return st.session_state.get(secret_name)
+
 @st.cache_resource
 def get_qdrant_client():
     # env = dotenv_values(".env")
     return QdrantClient(
-    url=os.getenv('QDRANT_URL'), 
-    api_key=os.getenv('QDRANT_API_KEY'),
+    url=get_secret('QDRANT_URL'), 
+    api_key=get_secret('QDRANT_API_KEY'),
 )
 
 def reset_collection(COLLECTION_NAME, DIM):
@@ -217,8 +225,7 @@ def open_AI_search(query_text: str, collection_name: str, limit: int = 10, score
     return vector_results, text_search_results
 
 def get_embedding_ai(text):
-    openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-   # openai_client = openai.Client(api_key=os.getenv("OPENAI_API_KEY")) 
+    openai_client = OpenAI(api_key=get_secret('OPENAI_API_KEY'))
     result = openai_client.embeddings.create(
         input=[text],
         model=global_variables.EMBEDDING_MODEL,
